@@ -6,9 +6,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -22,11 +24,12 @@ namespace UserManagement_usingJwt1.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        //_context.Entry(profile).State = EntityState.Modified;
         private static int _ID;
+        private static DateTime ExpiredKey;
         private IConfiguration _configuration;
         private readonly UserDbContext _context;
-
+        private static User users;
+         
         public UserController(IConfiguration configuration, UserDbContext context)
         {
             _configuration = configuration;
@@ -37,77 +40,74 @@ namespace UserManagement_usingJwt1.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] UserModel user)
         {
-            if (!string.IsNullOrEmpty(user.Username) && !string.IsNullOrEmpty(user.Password))
+            if (user.Username != null && user.Password != null)
             {
-                var _user = await _context.Users.FirstOrDefaultAsync
+                users = await _context.Users.FirstOrDefaultAsync
                     (u => u.Username == user.Username && u.Password == Encrypt(user.Password));
 
-                if (_user != null)
-                { 
-                    var claims = new[]
-                    {
-                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["UserSettings:Subject"]),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                        new Claim("Id", _user.Id.ToString()),
-                        new Claim("Username", _user.Username), 
-                        new Claim("Password", Encrypt(_user.Password)),
-                    };
-
-                    var key = new SymmetricSecurityKey
-                       (Encoding.UTF8.GetBytes(_configuration["UserSettings:Key"]));
-                    var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-                    var token = new JwtSecurityToken(
-                        _configuration["UserSettings:Issuer"],
-                        _configuration["UserSettings:Audience"],
-                        claims,
-                        expires: DateTime.Now.AddMinutes(5),
-                        signingCredentials: signIn);
-                    _ID = _user.Id;
-
-                    return Ok(new JwtSecurityTokenHandler().WriteToken(token));
-                }
-                else
+                if (users != null)
                 {
-                    return BadRequest("User account doesn't exist, please try again!");
+                    Token token = new Token();
+                    return Ok(RefreshTokenKey(token, users));
                 }
+                return BadRequest("User account doesn't exist, please try again!");
             }
-            else
-            {
-                return BadRequest("Invalid data");
-            }
+
+            return BadRequest("Invalid data");
         }
+
         [HttpPost("Register")]
         [AllowAnonymous]
-        public async Task<IActionResult> Register([FromBody] UserParams user)
+        public async Task<IActionResult> Register([FromBody] User user)
         {
             if (user != null)
             {
-                if (user.Password != user.ConfirmPassword)
+                if (IsValidEmail(user.Email) == false)
                 {
-                    return BadRequest("Password must be match with ConfirmPassword");
+                    return BadRequest("Email address is invalid, try again!!");
+                }
+
+                var checkUserExist = _context.Users.Where(u => u.Username == user.Username).FirstOrDefault();
+                if (checkUserExist != null)
+                {
+                    return BadRequest("User account already existed, please try again");
                 }
                 try
                 {
-                    User _user = new User();
-                    _user.Email = user.Email;
-                    _user.Username = user.Username;
-                    _user.Password = Encrypt(user.Password); 
-                    _context.Users.Add(_user);
+                    user.Password = Encrypt(user.Password);
+                    _context.Users.Add(user);
                     await _context.SaveChangesAsync();
 
-                    return Ok(_user);
+                    return Ok(user);
                 }
                 catch
                 {
                     return BadRequest("Invalid data");
                 }
             }
-            else
-            {
-                return BadRequest("Invalid data");
-            }
+            return BadRequest("Invalid data");
         }
+
+        [HttpGet("CheckTokenExpire")]
+        [AllowAnonymous]
+        public ActionResult CheckTokenExpire()
+        {
+            DateTime date = DateTime.ParseExact
+                   ("01/01/0001 12:00:00 AM", "M/d/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
+            if (DateTime.Compare(ExpiredKey, date) == 0)
+            {
+                return BadRequest("You have to login :D");
+            }
+
+            var atTime = DateTime.UtcNow;
+            if (DateTime.Compare(atTime, ExpiredKey) > 0)
+            {
+                return BadRequest("Token key to expire");
+            }
+
+            return Ok("Token key still active");
+        }
+
         [HttpGet("GetProfile")]
         public ActionResult<Profile> GetProfile()
         {
@@ -120,6 +120,7 @@ namespace UserManagement_usingJwt1.Controllers
             }
             return profile;
         }
+
         [HttpPut("UpdateProfile")]
         public async Task<IActionResult> updateUser_Profile([FromQuery] ProfileModel profile)
         {
@@ -128,8 +129,8 @@ namespace UserManagement_usingJwt1.Controllers
                 var user = _context.Users.Where(u => u.Id == _ID).FirstOrDefault();
                 var _profile = _context.Profiles.Where(p => p.Id == user.Profile_Id).FirstOrDefault();
 
-                if (_profile != null) //3 
-                {
+                if (_profile != null) //19i
+                { 
                     Update(_profile, profile);
                     await _context.SaveChangesAsync();
                     return Ok(profile);
@@ -140,6 +141,46 @@ namespace UserManagement_usingJwt1.Controllers
             {
                 return BadRequest("Invalid data");
             }
+        }
+
+        [HttpGet("RefreshToken")]
+        [AllowAnonymous]
+        public ActionResult RefreshToken()
+        {
+            Token token = new Token();
+            if (users != null)
+            {
+                return Ok(RefreshTokenKey(token, users));
+            }
+            return BadRequest("You have to login to operate");
+        }
+
+        private Token RefreshTokenKey(Token _token, User _user)
+        {
+            var claims = new[]
+                   {
+                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["UserSettings:Subject"]),
+                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
+                        new Claim("Id", _user.Id.ToString()),
+                        new Claim("Username", _user.Username),
+                        new Claim("Password", Encrypt(_user.Password)),
+                    };
+            var key = new SymmetricSecurityKey
+               (Encoding.UTF8.GetBytes(_configuration["UserSettings:Key"]));
+            var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(
+                _configuration["UserSettings:Issuer"],
+                _configuration["UserSettings:Audience"],
+                claims,
+                expires: DateTime.UtcNow.AddMinutes(02),
+                signingCredentials: signIn);
+            _ID = _user.Id;
+
+            _token.TokenKey = new JwtSecurityTokenHandler().WriteToken(token);
+            _token.ExpiredDate = token.ValidTo;
+            ExpiredKey = _token.ExpiredDate;
+            return _token;
         }
         private void Update(Profile _profile, ProfileModel profile)
         {
@@ -155,7 +196,8 @@ namespace UserManagement_usingJwt1.Controllers
             byte[] clearBytes = Encoding.Unicode.GetBytes(clearText);
             using (Aes encryptor = Aes.Create())
             {
-                Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey, new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
+                Rfc2898DeriveBytes pdb = new Rfc2898DeriveBytes(EncryptionKey,
+                    new byte[] { 0x49, 0x76, 0x61, 0x6e, 0x20, 0x4d, 0x65, 0x64, 0x76, 0x65, 0x64, 0x65, 0x76 });
                 encryptor.Key = pdb.GetBytes(32);
                 encryptor.IV = pdb.GetBytes(16);
                 using (MemoryStream ms = new MemoryStream())
@@ -169,6 +211,18 @@ namespace UserManagement_usingJwt1.Controllers
                 }
             }
             return clearText;
+        }
+        private static bool IsValidEmail(string checkEmail)
+        {
+            try
+            {
+                MailAddress m = new MailAddress(checkEmail);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
         }
     }
 }

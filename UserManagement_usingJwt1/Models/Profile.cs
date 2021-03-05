@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace UserManagement_usingJwt1.Models
@@ -27,5 +28,5 @@ namespace UserManagement_usingJwt1.Models
 
         [Column(TypeName = ("nvarchar(100)"))]
         public string Address { get; set; }
-    }
+    } 
 }

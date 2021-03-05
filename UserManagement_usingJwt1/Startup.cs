@@ -82,10 +82,13 @@ namespace UserManagement_usingJwt1
                       ValidateAudience = true,
                       ValidateLifetime = true,
                       ValidateIssuerSigningKey = true,
+                      RequireExpirationTime = false, 
+                      ClockSkew = TimeSpan.Zero,
                       ValidIssuer = Configuration["UserSettings:Issuer"],
                       ValidAudience = Configuration["UserSettings:Audience"],
                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["UserSettings:Key"]))
-                  };
+                  };  
+                  options.SaveToken = true;
               }); 
 
             services.AddMvc();
