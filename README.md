@@ -2,6 +2,8 @@
 
 1) In Sql Server Management after update-database: USE [UserManagement_usingJwt2] 
 
+and then
+
 2) Run this code: 
             CREATE TRIGGER [dbo].[trg_userInsert]
             on [dbo].[Users]
