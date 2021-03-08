@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UserManagement_usingJwt1.Middleware;
 using UserManagement_usingJwt1.Models;
 
 namespace UserManagement_usingJwt1
@@ -37,15 +38,14 @@ namespace UserManagement_usingJwt1
             {
                 options.JsonSerializerOptions.PropertyNamingPolicy = null;
             });
-
             services.AddDbContext<UserDbContext>(options =>
             {
                 options.UseSqlServer(Configuration.GetConnectionString("UserDbContextConnection"));
-            });
-
+            }); 
+             
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserManagement_usingJwtApi1", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserManagement API", Version = "v1" });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
@@ -55,7 +55,6 @@ namespace UserManagement_usingJwt1
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
-
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
@@ -67,7 +66,7 @@ namespace UserManagement_usingJwt1
                                 Id = "Bearer"
                             }
                         }, 
-                        new string[] {$" {StaticToken.TokenKey}"}
+                        new string[] {}
                     }
                 });
             });
@@ -79,15 +78,14 @@ namespace UserManagement_usingJwt1
               {
                   options.TokenValidationParameters = new TokenValidationParameters
                   {
-                      ValidateIssuer = true,
-                      ValidateAudience = true,
+                      ValidateIssuer = false,
+                      ValidateAudience = false,
                       ValidateLifetime = true,
                       ValidateIssuerSigningKey = true,
                       RequireExpirationTime = false,
                       ClockSkew = TimeSpan.Zero,
-                      ValidIssuer = Configuration["UserSettings:Issuer"],
-                      ValidAudience = Configuration["UserSettings:Audience"],
-                      IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["UserSettings:Key"]))
+                      IssuerSigningKey = new SymmetricSecurityKey
+                            (Encoding.UTF8.GetBytes(Configuration["UserSettings:Key"]))
                   };
                   options.SaveToken = true;
               });
@@ -102,16 +100,16 @@ namespace UserManagement_usingJwt1
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            app.UseStaticFiles();
             app.UseHttpsRedirection();
-
             app.UseRouting();
 
+            app.UseMiddleware<MyMiddleware>(); 
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UserManagement_usingJwtApi1 v1"));
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UserManagement "));
 
             app.UseEndpoints(endpoints =>
             {

@@ -45,24 +45,15 @@ namespace UserManagement_usingJwt1.Controllers
         {
             if (user.Username != null && user.Password != null)
             {
-                users = await _context.Users.FirstOrDefaultAsync 
+                users = await _context.Users.FirstOrDefaultAsync
                     (u => u.Username == user.Username && u.Password == Encrypt(user.Password));
-                 
-                if (users != null) 
+
+                if (users != null)
                 {
-                    Token token = new Token();  
+                    Token token = new Token();
                     string tokenString;
-                     
-                    tokenString = RefreshTokenKey(token, users);
-                    //if (!_cache.TryGetValue(StaticToken.TokenKey, out tokenString))
-                    //{
-                    //    var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    //        //Keep in cache for this time, reset the time if accessed.
-                    //        .SetSlidingExpiration(TimeSpan.FromSeconds(20));
-                    //    _cache.Set(StaticToken.TokenKey, tokenString, cacheEntryOptions);
-                    //     var res = _cache.Set(StaticToken.TokenKey, tokenString, cacheEntryOptions);
-                    //    StaticToken.TokenKey = res; 
-                    //} 
+
+                    tokenString = RefreshTokenKey(users);
                     return Ok(tokenString);
                 }
                 return BadRequest("User account doesn't exist, please try again!");
@@ -162,39 +153,32 @@ namespace UserManagement_usingJwt1.Controllers
         [AllowAnonymous]
         public ActionResult RefreshToken()
         {
-            Token token = new Token();
             if (users != null)
             {
-                return Ok(RefreshTokenKey(token, users));
+                return Ok(RefreshTokenKey(users));
             }
             return BadRequest("You have to login to operate");
         }
 
-        private string RefreshTokenKey(Token _token, User _user)
+        private string RefreshTokenKey(User _user)
         {
-            var claims = new[]
-                   {
-                        new Claim("Id", _user.Id.ToString()),
-                        new Claim("Username", _user.Username),
-                        new Claim("Password", Encrypt(_user.Password)),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                    };
-            var key = new SymmetricSecurityKey
-               (Encoding.UTF8.GetBytes(_configuration["UserSettings:Key"]));
-            var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                _configuration["UserSettings:Issuer"],
-                _configuration["UserSettings:Audience"],
-                claims,
-                expires: DateTime.UtcNow.AddSeconds(30),
-                signingCredentials: signIn);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_configuration["UserSettings:Key"]);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim("Id", _user.Id.ToString()),
+                    new Claim("Username", _user.Username)
+                }),
+                Expires = DateTime.UtcNow.AddSeconds(30),
+                SigningCredentials = new SigningCredentials
+                        (new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
             _ID = _user.Id;
-
-            _token.TokenKey = new JwtSecurityTokenHandler().WriteToken(token);
-            _token.ExpiredDate = token.ValidTo;
-            ExpiredKey = _token.ExpiredDate;
-            return _token.TokenKey;
+            ExpiredKey = token.ValidTo;
+            return tokenHandler.WriteToken(token);
         }
         private void Update(Profile _profile, ProfileModel profile)
         {
@@ -240,3 +224,13 @@ namespace UserManagement_usingJwt1.Controllers
         }
     }
 }
+
+//if (!_cache.TryGetValue(StaticToken.TokenKey, out tokenString))
+//{
+//    var cacheEntryOptions = new MemoryCacheEntryOptions()
+//        //Keep in cache for this time, reset the time if accessed.
+//        .SetSlidingExpiration(TimeSpan.FromSeconds(20));
+//    _cache.Set(StaticToken.TokenKey, tokenString, cacheEntryOptions);
+//     var res = _cache.Set(StaticToken.TokenKey, tokenString, cacheEntryOptions);
+//    StaticToken.TokenKey = res; 
+//} 
