@@ -8,6 +8,6 @@ namespace UserManagement_usingJwt1.Models
     public class Token
     {
         public string TokenKey { get; set; }
-        public DateTime ExpiredDate { get; set; } 
+        public DateTime ExpiredDate { get; set; }
     }
 }

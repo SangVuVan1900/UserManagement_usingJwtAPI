@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -26,14 +27,16 @@ namespace UserManagement_usingJwt1.Controllers
     {
         private static int _ID;
         private static DateTime ExpiredKey;
+        private static User users;
         private IConfiguration _configuration;
         private readonly UserDbContext _context;
-        private static User users;
-         
-        public UserController(IConfiguration configuration, UserDbContext context)
+        private readonly IMemoryCache _cache;
+
+        public UserController(IConfiguration configuration, UserDbContext context, IMemoryCache memoryCache)
         {
             _configuration = configuration;
             _context = context;
+            _cache = memoryCache;
         }
 
         [HttpPost("Login")]
@@ -42,13 +45,25 @@ namespace UserManagement_usingJwt1.Controllers
         {
             if (user.Username != null && user.Password != null)
             {
-                users = await _context.Users.FirstOrDefaultAsync
+                users = await _context.Users.FirstOrDefaultAsync 
                     (u => u.Username == user.Username && u.Password == Encrypt(user.Password));
-
-                if (users != null)
+                 
+                if (users != null) 
                 {
-                    Token token = new Token();
-                    return Ok(RefreshTokenKey(token, users));
+                    Token token = new Token();  
+                    string tokenString;
+                     
+                    tokenString = RefreshTokenKey(token, users);
+                    //if (!_cache.TryGetValue(StaticToken.TokenKey, out tokenString))
+                    //{
+                    //    var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    //        //Keep in cache for this time, reset the time if accessed.
+                    //        .SetSlidingExpiration(TimeSpan.FromSeconds(20));
+                    //    _cache.Set(StaticToken.TokenKey, tokenString, cacheEntryOptions);
+                    //     var res = _cache.Set(StaticToken.TokenKey, tokenString, cacheEntryOptions);
+                    //    StaticToken.TokenKey = res; 
+                    //} 
+                    return Ok(tokenString);
                 }
                 return BadRequest("User account doesn't exist, please try again!");
             }
@@ -130,7 +145,7 @@ namespace UserManagement_usingJwt1.Controllers
                 var _profile = _context.Profiles.Where(p => p.Id == user.Profile_Id).FirstOrDefault();
 
                 if (_profile != null) //19i
-                { 
+                {
                     Update(_profile, profile);
                     await _context.SaveChangesAsync();
                     return Ok(profile);
@@ -155,16 +170,15 @@ namespace UserManagement_usingJwt1.Controllers
             return BadRequest("You have to login to operate");
         }
 
-        private Token RefreshTokenKey(Token _token, User _user)
+        private string RefreshTokenKey(Token _token, User _user)
         {
             var claims = new[]
                    {
-                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["UserSettings:Subject"]),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                         new Claim("Id", _user.Id.ToString()),
                         new Claim("Username", _user.Username),
                         new Claim("Password", Encrypt(_user.Password)),
+                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                     };
             var key = new SymmetricSecurityKey
                (Encoding.UTF8.GetBytes(_configuration["UserSettings:Key"]));
@@ -173,14 +187,14 @@ namespace UserManagement_usingJwt1.Controllers
                 _configuration["UserSettings:Issuer"],
                 _configuration["UserSettings:Audience"],
                 claims,
-                expires: DateTime.UtcNow.AddMinutes(02),
+                expires: DateTime.UtcNow.AddSeconds(30),
                 signingCredentials: signIn);
             _ID = _user.Id;
 
             _token.TokenKey = new JwtSecurityTokenHandler().WriteToken(token);
             _token.ExpiredDate = token.ValidTo;
             ExpiredKey = _token.ExpiredDate;
-            return _token;
+            return _token.TokenKey;
         }
         private void Update(Profile _profile, ProfileModel profile)
         {

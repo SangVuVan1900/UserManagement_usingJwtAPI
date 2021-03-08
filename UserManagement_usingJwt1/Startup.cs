@@ -24,13 +24,14 @@ namespace UserManagement_usingJwt1
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-        }
+        } 
 
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMemoryCache();
 
             services.AddControllers().AddJsonOptions(options =>
             {
@@ -65,8 +66,8 @@ namespace UserManagement_usingJwt1
                                 Type = ReferenceType.SecurityScheme,
                                 Id = "Bearer"
                             }
-                        },
-                        new string[] { }
+                        }, 
+                        new string[] {$" {StaticToken.TokenKey}"}
                     }
                 });
             });
@@ -82,14 +83,14 @@ namespace UserManagement_usingJwt1
                       ValidateAudience = true,
                       ValidateLifetime = true,
                       ValidateIssuerSigningKey = true,
-                      RequireExpirationTime = false, 
+                      RequireExpirationTime = false,
                       ClockSkew = TimeSpan.Zero,
                       ValidIssuer = Configuration["UserSettings:Issuer"],
                       ValidAudience = Configuration["UserSettings:Audience"],
                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["UserSettings:Key"]))
-                  };  
+                  };
                   options.SaveToken = true;
-              }); 
+              });
 
             services.AddMvc();
         }
@@ -106,7 +107,7 @@ namespace UserManagement_usingJwt1
 
             app.UseRouting();
 
-            app.UseAuthentication(); 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseSwagger();

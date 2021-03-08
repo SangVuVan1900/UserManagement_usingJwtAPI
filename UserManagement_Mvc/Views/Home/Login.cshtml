@@ -1,0 +1,42 @@
+﻿@model UserManagement_Mvc.Models.User
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<p style="color:red; text-align: center; font-size: 22px">@ViewBag.CheckValid</p>
+<div style="padding-top: 50px;"></div>
+<div style="padding: 50px;">
+    <div class="row">
+        <div class="col-md-4">
+            <div>
+                @using (Html.BeginForm("Login", "Home", FormMethod.Post, new { role = "form" }))
+                {
+                    <div>
+                        @Html.AntiForgeryToken()
+                        <div>
+                            <label>Username</label><br />
+                        </div>
+                        <div>
+                            @Html.TextBoxFor(m => m.Username, new { @class = "form-control txtbox" })
+                        </div>
+                        <div style="padding-top: 20px;"></div>
+
+                        <div>
+                            <label>Password</label><br />
+                        </div>
+                        <div>
+                            @Html.PasswordFor(m => m.Password, new { @class = "form-control txtbox" })
+                        </div>
+                    </div>
+                    <div style="padding-left: 35%; width: 40%">
+                        <div style="padding-top: 20px">
+                            <input class="btn btn-primary" type="submit" value="Login" />
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
