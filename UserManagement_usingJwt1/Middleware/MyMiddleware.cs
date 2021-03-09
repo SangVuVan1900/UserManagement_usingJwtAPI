@@ -27,7 +27,7 @@ namespace UserManagement_usingJwt1.Middleware
         public async Task Invoke(HttpContext context, UserDbContext dataContext)
         {
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-
+                                    
             if (token != null)
             {
                 await attachAccountToContext(context, dataContext, token);
@@ -47,16 +47,14 @@ namespace UserManagement_usingJwt1.Middleware
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = false,
                     ValidateAudience = false,
-                    // set clockskew to zero so tokens expire exactly at token expiration time 
-                    // (instead of 5 minutes later)
                     ClockSkew = TimeSpan.Zero
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                var accountId = int.Parse(jwtToken.Claims.First(x => x.Type == "Id").Value);
+                var userId = int.Parse(jwtToken.Claims.First(x => x.Type == "Id").Value);
 
-                // attach account to context on successful jwt validation
-                context.Items["Users"] = await dataContext.Users.FindAsync(accountId);
+                // attach account to context on successful jwt validation 
+                context.Items["Users"] = await dataContext.Users.FindAsync(userId);
             }
             catch
             {

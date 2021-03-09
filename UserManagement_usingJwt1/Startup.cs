@@ -42,7 +42,7 @@ namespace UserManagement_usingJwt1
             {
                 options.UseSqlServer(Configuration.GetConnectionString("UserDbContextConnection"));
             }); 
-             
+              
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "UserManagement API", Version = "v1" });
@@ -65,12 +65,11 @@ namespace UserManagement_usingJwt1
                                 Type = ReferenceType.SecurityScheme,
                                 Id = "Bearer"
                             }
-                        }, 
+                        },
                         new string[] {}
                     }
                 });
             });
-
 
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

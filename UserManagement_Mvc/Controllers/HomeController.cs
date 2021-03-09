@@ -14,19 +14,17 @@ using Microsoft.AspNetCore.Http;
 
 namespace UserManagement_Mvc.Controllers
 {
-
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
 
         public HomeController(ILogger<HomeController> logger)
         {
-            _logger = logger;
+            _logger = logger; // i51
         }
 
         public async Task<IActionResult> Login(User user)
         {
-            ViewBag.CheckValid = "";
             using (var httpClient = new HttpClient())
             {
                 StringContent content =
@@ -35,19 +33,22 @@ namespace UserManagement_Mvc.Controllers
                 {
                     string token = await response.Content.ReadAsStringAsync();
 
-                    if (token.Length > 50)
+                    if (token == "User account doesn't exist, please try again" || token == "Invalid data")
                     {
-                        HttpContext.Session.SetString("JWT", token);
-                        return RedirectToAction("Privacy", "Home");
+                        ViewBag.CheckValid = "User account doesn't exist";
+                        return View(user);
                     }
-                    else
-                    {
-                        ViewBag.CheckValid = "Usere account doesn't exist";
-                    }
+                    HttpContext.Session.SetString("JWT", token);
+                    return RedirectToAction("Privacy", "Home");
                 }
             }
-            return View(user);
         }
+
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return Redirect("~/Home/Login");
+        } 
 
         public IActionResult Privacy()
         {

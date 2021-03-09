@@ -56,7 +56,7 @@ namespace UserManagement_usingJwt1.Controllers
                     tokenString = RefreshTokenKey(users);
                     return Ok(tokenString);
                 }
-                return BadRequest("User account doesn't exist, please try again!");
+                return BadRequest("User account doesn't exist, please try again");
             }
 
             return BadRequest("Invalid data");
@@ -78,6 +78,7 @@ namespace UserManagement_usingJwt1.Controllers
                 {
                     return BadRequest("User account already existed, please try again");
                 }
+
                 try
                 {
                     user.Password = Encrypt(user.Password);
@@ -135,7 +136,7 @@ namespace UserManagement_usingJwt1.Controllers
                 var user = _context.Users.Where(u => u.Id == _ID).FirstOrDefault();
                 var _profile = _context.Profiles.Where(p => p.Id == user.Profile_Id).FirstOrDefault();
 
-                if (_profile != null) //19i
+                if (_profile != null) //i5
                 {
                     Update(_profile, profile);
                     await _context.SaveChangesAsync();
