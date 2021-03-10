@@ -33,7 +33,7 @@ namespace UserManagement_usingJwt1.Middleware
                 await attachAccountToContext(context, dataContext, token);
             }
             await _next(context);
-        }
+        } 
 
         private async Task attachAccountToContext(HttpContext context, UserDbContext dataContext, string token)
         {

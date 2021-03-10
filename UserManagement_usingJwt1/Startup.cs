@@ -71,7 +71,6 @@ namespace UserManagement_usingJwt1
                 });
             });
 
-
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
               .AddJwtBearer(options =>
               {

@@ -11,6 +11,9 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace UserManagement_Mvc.Controllers
 {
@@ -22,6 +25,7 @@ namespace UserManagement_Mvc.Controllers
         {
             _logger = logger; // i51
         }
+
 
         public async Task<IActionResult> Login(User user)
         {
@@ -42,6 +46,28 @@ namespace UserManagement_Mvc.Controllers
                     return RedirectToAction("Privacy", "Home");
                 }
             }
+        }
+
+        
+        public IActionResult GoogleLogin()
+        {
+            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse") };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        } 
+
+
+        public async Task<IActionResult> GoogleResponse()
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var claims = result.Principal.Identities.FirstOrDefault()
+                .Claims.Select(claim => new
+                {
+                    //claim.Issuer,
+                    claim.OriginalIssuer,
+                    claim.Type,
+                    claim.Value
+                }); 
+            return Json(claims);
         }
 
         public IActionResult Logout()

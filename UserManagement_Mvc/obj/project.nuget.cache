@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "uG68JeOzh7aiyBFM+WbFBbdEx/Vs7m6lIJJ68IrOvMZQ4YM5aXAf9P+rxiHotRMe56U/qqEChlmUEUWSc7KUZA==",
+  "dgSpecHash": "+lGvISiit2KbVORLnbMtrOFPcDJYAuTs6xQi9aC7yCnm0GJiCsAPH79Zmu50kAPaAWh3Q+Mk2Wka4BDYisV+qQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\1D\\Desktop\\Mission\\JWT\\UserManagement_Mvc\\UserManagement_Mvc.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\1D\\.nuget\\packages\\humanizer.core\\2.2.0\\humanizer.core.2.2.0.nupkg.sha512",
+    "C:\\Users\\1D\\.nuget\\packages\\microsoft.aspnetcore.authentication.google\\5.0.4\\microsoft.aspnetcore.authentication.google.5.0.4.nupkg.sha512",
     "C:\\Users\\1D\\.nuget\\packages\\microsoft.aspnetcore.html.abstractions\\2.2.0\\microsoft.aspnetcore.html.abstractions.2.2.0.nupkg.sha512",
     "C:\\Users\\1D\\.nuget\\packages\\microsoft.aspnetcore.razor\\2.2.0\\microsoft.aspnetcore.razor.2.2.0.nupkg.sha512",
     "C:\\Users\\1D\\.nuget\\packages\\microsoft.aspnetcore.razor.language\\5.0.0\\microsoft.aspnetcore.razor.language.5.0.0.nupkg.sha512",

@@ -116,3 +116,4 @@ C:\Users\1D\Desktop\Mission\JWT\UserManagement_Mvc\obj\Debug\net5.0\UserManageme
 C:\Users\1D\Desktop\Mission\JWT\UserManagement_Mvc\obj\Debug\net5.0\UserManagement_Mvc.genruntimeconfig.cache
 C:\Users\1D\Desktop\Mission\JWT\UserManagement_Mvc\obj\Debug\net5.0\Razor\Views\UserProfile\Index.cshtml.g.cs
 C:\Users\1D\Desktop\Mission\JWT\UserManagement_Mvc\obj\Debug\net5.0\Razor\Views\Home\Login.cshtml.g.cs
+C:\Users\1D\Desktop\Mission\JWT\UserManagement_Mvc\bin\Debug\net5.0\Microsoft.AspNetCore.Authentication.Google.dll
